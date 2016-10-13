@@ -93,7 +93,7 @@ main(
 
     printf("DevicePath: %ws\n", G_DevicePath);
 
-    hDevice = CreateFile(G_DevicePath,
+    hDevice = CreateFile(G_DevicePath, //牢记使用接口的注册表路径来创建设备句柄！
                          GENERIC_READ|GENERIC_WRITE,
                          FILE_SHARE_READ | FILE_SHARE_WRITE,
                          NULL,
