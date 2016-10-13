@@ -118,9 +118,7 @@ Return Value:
 {
     NTSTATUS status;
 
-    UNREFERENCED_PARAMETER(Driver);
-
-    KdPrint(("+++++++Enter  EchoEvtDeviceAdd\n"));
+    //...
 
     status = EchoDeviceCreate(DeviceInit);
 
@@ -154,7 +152,7 @@ Return Value:
     //下面应当是初始化string的典型方法
     status = WdfStringCreate(NULL, WDF_NO_OBJECT_ATTRIBUTES, &string);
     if (!NT_SUCCESS(status)) {
-        KdPrint(("+++++++Error: WdfStringCreate failed 0x%x\n", status));
+        //...
         return status;
     }
 
@@ -166,12 +164,12 @@ Return Value:
         // deleted when the driverobject is deleted when the DriverEntry
         // returns a failure status.
         //
-        KdPrint(("+++++++Error: WdfDriverRetrieveVersionString failed 0x%x\n", status));
+        //...
         return status;
     }
 
     WdfStringGetUnicodeString(string, &us);
-    KdPrint(("+++++++Echo Sample %wZ\n", &us));
+    //...
 
     WdfObjectDelete(string);
     string = NULL; // To avoid referencing a deleted object.
@@ -181,9 +179,9 @@ Return Value:
     //
     WDF_DRIVER_VERSION_AVAILABLE_PARAMS_INIT(&ver, 1, 0);
     if (WdfDriverIsVersionAvailable(WdfGetDriver(), &ver) == TRUE) {
-        KdPrint(("+++++++Yes, framework version is 1.0\n"));
+        //...
     }else {
-        KdPrint(("+++++++No, framework verison is not 1.0\n"));
+        //...
     }
 
     return STATUS_SUCCESS;
