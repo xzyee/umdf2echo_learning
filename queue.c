@@ -1,17 +1,3 @@
-/*++
-
-Copyright (c) 1990-2000  Microsoft Corporation
-
-Module Name:
-
-    queue.c
-
-Abstract:
-
-    This is a C version of a very simple sample driver that illustrates
-    how to use the driver framework and demonstrates best practices.
-
---*/
 
 #include "driver.h"
 
@@ -28,13 +14,6 @@ EchoQueueInitialize( //在EchoDeviceCreate中被调用
     WDFDEVICE Device
     )
 /*++
-
-Routine Description:
-
-
-     The I/O dispatch callbacks for the frameworks device object
-     are configured in this function.
-
      A single default I/O Queue is configured for serial request
      processing, and a driver context memory allocation is created
      to hold our structure QUEUE_CONTEXT.
@@ -45,16 +24,6 @@ Routine Description:
      The lifetime of this memory is tied to the lifetime of the I/O
      Queue object, and we register an optional destructor callback
      to release any private allocations, and/or resources.
-
-
-Arguments:
-
-    Device - Handle to a framework device object.
-
-Return Value:
-
-    NTSTATUS
-
 --*/
 {
     WDFQUEUE queue; //句柄
@@ -70,8 +39,8 @@ Return Value:
     //
 	//第一部：初始化WDF_IO_QUEUE_CONFIG
     WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(
-         &queueConfig, //被初始化
-        WdfIoQueueDispatchSequential //枚举
+           &queueConfig, //被初始化
+            WdfIoQueueDispatchSequential //枚举
         );
 
 	//继续初始化queueConfig，装两个必要的回调
@@ -103,7 +72,7 @@ Return Value:
                  );
 
     if( !NT_SUCCESS(status) ) {
-        KdPrint(("+++++++WdfIoQueueCreate failed 0x%x\n",status));
+        //...
         return status;
     }
 
@@ -129,10 +98,7 @@ Return Value:
     // Create the Queue timer
     //
     status = EchoTimerCreate(&queueContext->Timer, queue);
-    if (!NT_SUCCESS(status)) {
-        KdPrint(("+++++++Error creating timer 0x%x\n",status));
-        return status;
-    }
+    //...
 
     return status;
 }
@@ -147,21 +113,6 @@ EchoTimerCreate(  //不是微软的架构
     IN WDFQUEUE        Queue
     )
 /*++
-
-Routine Description:
-
-    Subroutine to create timer. By associating the timerobject with
-    the queue, we are basically telling the framework to serialize the queue
-    callbacks with the timer callback. By doing so, we don't have to worry
-    about protecting queue-context structure from multiple threads accessing
-    it simultaneously.
-
-Arguments:
-
-
-Return Value:
-
-    NTSTATUS
 
 --*/
 {
@@ -181,8 +132,8 @@ Return Value:
     // WDF_OBJECT_ATTRIBUTES_INIT sets AutomaticSerialization to TRUE by default
     //
     WDF_OBJECT_ATTRIBUTES_INIT(&timerAttributes);
-
-	//下面这句话有深刻的含义，值得反复看
+    
+    //下面这句话有深刻的含义，值得反复看
     timerAttributes.ParentObject = Queue; // Synchronize with the I/O Queue
     timerAttributes.ExecutionLevel = WdfExecutionLevelPassive; //枚举，很低的IRQL级别
 
@@ -205,20 +156,8 @@ EchoEvtIoQueueContextDestroy(
     WDFOBJECT Object
 )
 /*++
-
-Routine Description:
-
     This is called when the Queue that our driver context memory
     is associated with is destroyed.
-
-Arguments:
-
-    Context - Context that's being freed.
-
-Return Value:
-
-    VOID
-
 --*/
 {
     PQUEUE_CONTEXT queueContext = QueueGetContext(Object);
@@ -247,27 +186,15 @@ EchoEvtRequestCancel(
     IN WDFREQUEST Request
     )
 /*++
-
-Routine Description:
-
-   Called when an I/O request is cancelled after the driver has marked
+    Called when an I/O request is cancelled after the driver has marked
     the request cancellable. This callback is automatically synchronized
     with the I/O callbacks since we have chosen to use frameworks Device
     level locking.
-
-Arguments:
-
-    Request - Request being cancelled.
-
-Return Value:
-
-    VOID
-
 --*/
 {
     PQUEUE_CONTEXT queueContext = QueueGetContext(WdfRequestGetIoQueue(Request));
 
-    KdPrint(("+++++++EchoEvtRequestCancel called on Request 0x%p\n",  Request));
+    //...
 
     //
     // The following is race free by the callside or DPC side
@@ -310,18 +237,11 @@ Arguments:
     Queue -  Handle to the framework queue object that is associated with the
              I/O request.
 
-    Request - Handle to a framework request object.
-
     Length  - number of bytes to be read.  //永远不会为0的原因要知道
               The default property of the queue is to not dispatch
               zero lenght read & write requests to the driver and
               complete is with status success. So we will never get
               a zero length request.
-
-Return Value:
-
-    VOID
-
 --*/
 {
     NTSTATUS Status;
@@ -329,9 +249,8 @@ Return Value:
     WDFMEMORY memory; //句柄
     size_t writeMemoryLength;
 
-    _Analysis_assume_(Length > 0);
-
-    KdPrint(("+++++++EchoEvtIoRead Called! Queue 0x%p, Request 0x%p Length %d\n",
+    //...
+    //...
              Queue,Request,Length));
     //
     // No data to read，如果句柄不在的话
@@ -357,7 +276,7 @@ Return Value:
     // 取得request上的内存，这个不会疯跑吧？
     Status = WdfRequestRetrieveOutputMemory(Request, &memory);
     if( !NT_SUCCESS(Status) ) {
-        KdPrint(("+++++++EchoEvtIoRead Could not get request memory buffer 0x%x\n", Status));
+        //...
         WdfVerifierDbgBreakPoint();
         WdfRequestCompleteWithInformation(Request, Status, 0L);//错误也要完成
         return;
@@ -369,7 +288,7 @@ Return Value:
                              WdfMemoryGetBuffer(queueContext->WriteMemory, NULL),//用使用句柄内存就得用这个函数得到内存的地址
                              Length );
     if( !NT_SUCCESS(Status) ) {
-        KdPrint(("+++++++EchoEvtIoRead: WdfMemoryCopyFromBuffer failed 0x%x\n", Status));
+        //...
         WdfRequestComplete(Request, Status);//错误也要完成
         return;
     }
@@ -386,7 +305,7 @@ Return Value:
     queueContext->CurrentRequest = Request; //如此次Defer
     queueContext->CurrentStatus  = Status;//Status不用修改？
 
-	//没有调用WdfRequestComplete，显然没有完成
+    //没有调用WdfRequestComplete，显然没有完成
 
     return;
 }
@@ -410,24 +329,6 @@ Routine Description:
     and stores the buffer pointer in the queue-context with the length variable
     representing the buffers length. The actual completion of the request
     is defered to the periodic timer dpc.
-
-Arguments:
-
-    Queue -  Handle to the framework queue object that is associated with the
-             I/O request.
-
-    Request - Handle to a framework request object.
-
-    Length  - number of bytes to be read.
-              The default property of the queue is to not dispatch
-              zero lenght read & write requests to the driver and
-              complete is with status success. So we will never get
-              a zero length request.
-
-Return Value:
-
-    VOID
-
 --*/
 {
     NTSTATUS Status;
@@ -437,12 +338,10 @@ Return Value:
 
     _Analysis_assume_(Length > 0);
 
-    KdPrint(("+++++++EchoEvtIoWrite Called! Queue 0x%p, Request 0x%p Length %d\n",
-             Queue,Request,Length));
+    //...
 
     if( Length > MAX_WRITE_LENGTH ) {
-        KdPrint(("+++++++EchoEvtIoWrite Buffer Length to big %d, Max is %d\n",
-                 Length,MAX_WRITE_LENGTH));
+        //...
         WdfRequestCompleteWithInformation(Request, STATUS_BUFFER_OVERFLOW, 0L);//错误也要完成
         return;
     }
@@ -450,8 +349,7 @@ Return Value:
     // Get the memory buffer
     Status = WdfRequestRetrieveInputMemory(Request, &memory);//数据在request里面，这是源
     if( !NT_SUCCESS(Status) ) {
-        KdPrint(("+++++++EchoEvtIoWrite Could not get request memory buffer 0x%x\n",
-                 Status));
+        //...
         WdfVerifierDbgBreakPoint();
         WdfRequestComplete(Request, Status);//错误也要完成
         return;
@@ -465,14 +363,14 @@ Return Value:
 
     Status = WdfMemoryCreate(WDF_NO_OBJECT_ATTRIBUTES, //每次都重新重建一块内存？
                              NonPagedPoolNx,
-                             'sam1',
+                             'sam1',//通常不超过4个char
                              Length,
                              &queueContext->WriteMemory, //句柄
                              &writeBuffer
                              );
 
     if(!NT_SUCCESS(Status)) {
-        KdPrint(("+++++++EchoEvtIoWrite: Could not allocate %d byte buffer\n", Length));
+        //...
         WdfRequestComplete(Request, STATUS_INSUFFICIENT_RESOURCES);
         return;
     }
@@ -484,7 +382,7 @@ Return Value:
                                     writeBuffer,
                                     Length );
     if( !NT_SUCCESS(Status) ) {
-        KdPrint(("+++++++EchoEvtIoWrite WdfMemoryCopyToBuffer failed 0x%x\n", Status));
+        //...
         WdfVerifierDbgBreakPoint();
 
         WdfObjectDelete(queueContext->WriteMemory);
@@ -504,7 +402,7 @@ Return Value:
     queueContext->CurrentRequest = Request;
     queueContext->CurrentStatus  = Status;
 
-	//没有调用WdfRequestComplete，显然没有完成
+    //没有调用WdfRequestComplete，显然没有完成
 
     return;
 }
@@ -529,10 +427,6 @@ Arguments:
 
     Timer - Handle to a framework Timer object.
 
-Return Value:
-
-    VOID
-
 --*/
 {
     NTSTATUS      Status;
@@ -550,7 +444,7 @@ Return Value:
     Request = queueContext->CurrentRequest;
     if( Request != NULL ) { //目的是保证Request句柄还有效，如果cancel已经完成了，那么Request将在某点无效，就不能调用下面的WdfRequestUnmarkCancelable函数了
 	
-		//Therefore, your driver must not call XXXX after its EvtRequestCancel callback function has called WdfRequestComplete.
+	//Therefore, your driver must not call XXXX after its EvtRequestCancel callback function has called WdfRequestComplete.
 
         //
         // Attempt to remove cancel status from the request.
@@ -559,20 +453,19 @@ Return Value:
         // since the EchoEvtIoCancel function has run, or is about to run
         // and we are racing with it.
         //
-		//我们在和cancel函数在竞争...必须分出高下，靠下面的函数
+	//我们在和cancel函数在竞争...必须分出高下，靠下面的函数
         Status = WdfRequestUnmarkCancelable(Request);
         if( Status != STATUS_CANCELLED ) {
 
             queueContext->CurrentRequest = NULL; //竞争赢了！先标记
             Status = queueContext->CurrentStatus;
 
-            KdPrint(("+++++++CustomTimerDPC Completing request 0x%p, Status 0x%x \n", Request,Status));
+            //...
 
             WdfRequestComplete(Request, Status); //终于该完成了，大多数都是从这个地方完成的
         }
         else {
-            KdPrint(("+++++++CustomTimerDPC Request 0x%p is STATUS_CANCELLED, not completing\n",
-                                Request));
+            //...
         }
     }
 
