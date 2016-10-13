@@ -1,7 +1,8 @@
 #include "driver.h"
-
+//问题：什么时候被调用？
+//答案：被EchoEvtDeviceAdd调用（晚些），不是被DriverEntry调用（早些）
 NTSTATUS
-EchoDeviceCreate(
+EchoDeviceCreate( 
     PWDFDEVICE_INIT DeviceInit
     )
 /*++
